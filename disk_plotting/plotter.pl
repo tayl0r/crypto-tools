@@ -21,8 +21,8 @@ my $dirListCmd = qq^ls -1 '#PATH#'^;
 # command to get free bytes from the paths above. should output 1 line of only the free bytes
 my $freeBytesCmd = qq^df '#PATH#' -B1 -P | tail -n1 | awk '{print \$4}'^;
 
-# Xplotter command with your memory
-my $plotterCmd = qq^/mnt/c/Users/taylor/Desktop/XPlotter_v1.1/XPlotter_avx2.exe -mem 12G^;
+# Xplotter command with your thread and memory settings
+my $plotterCmd = qq^/mnt/c/Users/taylor/Desktop/XPlotter_v1.1/XPlotter_avx2.exe -t 7 -mem 12G^;
 
 # command to move the plot file from the cache to the final storage, then delete it
 my $moveCmd = qq^scp -P 2222 #SOURCE# taylor\@10.0.0.6:#DESTINATION#/; rm #SOURCE#^;
@@ -34,7 +34,8 @@ my $numericWalletId = "6791154659383501881";
 
 # your cache folder should have at least twice as much as this
 #my $plotFileSizeNonces = 900000; # 235.9 gb
-my $plotFileSizeNonces = 10000; # 2.44 gb
+my $plotFileSizeNonces = 500000; # 122.0 gb
+#my $plotFileSizeNonces = 10000; # 2.44 gb
 
 # END CONFIG
 
@@ -110,7 +111,7 @@ while (1) {
 	print "Cache folder has enough free space, " . BytesToGigabytes($freeCacheBytes) . " gb.\n";
 
 	# generating new plot
-	$cmd = "$plotterCmd -id $numericWalletId -sn $currentNonce -n $plotFileSizeNonces -t 16 -path '$cacheFolderWin'";
+	$cmd = "$plotterCmd -id $numericWalletId -sn $currentNonce -n $plotFileSizeNonces -path '$cacheFolderWin'";
 	# figure out new filename
 	my $newPlotFile = $numericWalletId . "_" . $currentNonce . "_" . $plotFileSizeNonces . "_" . $plotFileSizeNonces;
 	print "expected plot file: $newPlotFile\n";
