@@ -40,6 +40,8 @@ my $plotFileSizeNonces = 500000; # 122.0 gb
 # END CONFIG
 
 my $bytesPerNonce = 262144;
+# nonces must be a multiple of 8
+$plotFileSizeNonces = int($plotFileSizeNonces / 8) * 8;
 my $plotFileSizeBytes = $plotFileSizeNonces * $bytesPerNonce;
 my $currentlyMovingFile = '';
 
@@ -65,35 +67,39 @@ foreach my $plotFolder (@plotFolders) {
 
 # start our run loop
 while (1) {
-	print "LOOP START! currentNonce = $currentNonce\n";
+	print "LOOP START! currentNonce = $currentNonce, currentSize = " . BytesToGigabytes($plotFileSizeBytes) . " gb.\n";
 	
 	# check free space of plot folders and figure out which one to use
 	my $plotPath = "";
 	my $maxBytesFree = 0;
+	my $enoughSpace = 0;
 	foreach my $plotFolder (@plotFolders) {
 		my $freeBytes = $storageFreeBytes{$plotFolder};
 		if ($freeBytes > $plotFileSizeBytes) {
 			$plotPath = $plotFolder;
 			$maxBytesFree = $freeBytes;
+			$enoughSpace = 1;
 			last;
 		} else {
 			if ($freeBytes > $maxBytesFree) {
-				$maxBytesFree = $freeBytes;
 				$plotPath = $plotFolder;
+				$maxBytesFree = $freeBytes;
 			}
 		}
 	}
 
-	if (!$plotPath) {
+	if (!$enoughSpace) {
 		# not enough space, use up the remaining
-		print "Didn't find any path with enough space available.\n";
+		print "Didn't find any path with enough space available for current size.\n";
 		print "Path '$plotPath' has the most space left with " . BytesToGigabytes($maxBytesFree) . " gb.\n";
 		if (BytesToGigabytes($maxBytesFree) <= 1) {
 			print "Not enough space left on plot drives! All done!\n";
 			last;
 		}
 		$plotFileSizeBytes = $maxBytesFree - ($bytesPerNonce * 100);
-		$plotFileSizeNonces = $plotFileSizeBytes / $bytesPerNonce;
+		# nonces must be a multiple of 8
+		$plotFileSizeNonces = int($plotFileSizeBytes / $bytesPerNonce / 8) * 8;
+		$plotFileSizeBytes = $plotFileSizeNonces * $bytesPerNonce;
 		print "Setting plot file size nonces to $plotFileSizeNonces\n";
 	} else {
 		# we have enough space, can keep going as normal
@@ -109,6 +115,7 @@ while (1) {
 		last;
 	}
 	print "Cache folder has enough free space, " . BytesToGigabytes($freeCacheBytes) . " gb.\n";
+	#exit;
 
 	# generating new plot
 	$cmd = "$plotterCmd -id $numericWalletId -sn $currentNonce -n $plotFileSizeNonces -path '$cacheFolderWin'";
@@ -179,7 +186,7 @@ sub GetMaxNonceFromFiles {
 	foreach my $file (@files) {
 		#print "file: $file\n";
 		my @parts = split(/_/, $file);
-		my $nonce = $parts[2];
+		my $nonce = $parts[1] + $parts[2];
 		if ($nonce > $max) {
 			$max = $nonce;
 		}
